@@ -1,8 +1,7 @@
 import pytest
 
 from qat.purr.backends.qblox.live import QbloxLiveHardwareModel
-
-from .utils import ClusterInfo, setup_qblox_hardware_model
+from tests.qat.qblox.utils import ClusterInfo, setup_qblox_hardware_model
 
 
 @pytest.fixture

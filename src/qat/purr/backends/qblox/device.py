@@ -8,7 +8,7 @@ from typing import Dict, List
 
 import numpy as np
 import regex
-from qblox_instruments import Cluster, DummyScopeAcquisitionData
+from qblox_instruments import Cluster, DummyBinnedAcquisitionData, DummyScopeAcquisitionData
 from qblox_instruments.qcodes_drivers.module import Module
 from qblox_instruments.qcodes_drivers.sequencer import Sequencer
 
@@ -282,16 +282,9 @@ class QbloxControlHardware(ControlHardware):
                 if module.is_qrm_type:
                     sequencer.delete_acquisition_data(all=True)
 
-        for module, allocations in self._resources.items():
-            for target, sequencer in allocations.items():
                 module.arm_sequencer(sequencer.seq_idx)
-
-        for module, allocations in self._resources.items():
-            for target, sequencer in allocations.items():
                 module.start_sequencer(sequencer.seq_idx)
 
-        for module, allocations in self._resources.items():
-            for target, sequencer in allocations.items():
                 if module.is_qrm_type:
                     result_id = target.physical_channel.id
                     if result_id in results:
@@ -348,6 +341,20 @@ class DummyQbloxControlHardware(QbloxControlHardware):
             sequencer=sequencer.seq_idx, data=dummy_scope_acquisition_data
         )
 
+    def _setup_dummy_binned_acq_data(
+        self, module, sequencer: Sequencer, sequence: Sequence
+    ):
+        for name, acquisition in sequence.acquisitions.items():
+            dummy_data = (np.random.random(), np.random.random())
+            dummy_binned_acquisition_data = [
+                DummyBinnedAcquisitionData(data=dummy_data, thres=1, avg_cnt=1)
+            ] * acquisition["num_bins"]
+            module.set_dummy_binned_acquisition_data(
+                sequencer=sequencer.seq_idx,
+                acq_index_name=name,
+                data=dummy_binned_acquisition_data,
+            )
+
     def set_data(self, qblox_packages: List[QbloxPackage]):
         self._resources.clear()
         self.reset(ResetLevel.SOFT)
@@ -356,6 +363,7 @@ class DummyQbloxControlHardware(QbloxControlHardware):
 
             if module.is_qrm_type:
                 self._setup_dummy_scope_acq_data(module, sequencer, package.sequence)
+                self._setup_dummy_binned_acq_data(module, sequencer, package.sequence)
 
     def start_playback(self, repetitions: int, repetition_time: float):
         if not any(self._resources):

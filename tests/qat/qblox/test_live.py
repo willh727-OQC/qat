@@ -5,6 +5,7 @@ from qat.purr.compiler.devices import PulseShapeType
 from qat.purr.compiler.instructions import SweepValue, Variable
 from qat.purr.compiler.runtime import execute_instructions, get_builder
 from qat.purr.utils.logger import get_default_logger
+from tests.qat.qblox.builder_nuggets import resonator_spect
 from tests.qat.qblox.utils import ClusterInfo
 
 log = get_default_logger()
@@ -201,4 +202,12 @@ class TestQbloxLiveEngine:
         )
 
         results, _ = execute_instructions(engine, builder.instructions)
+        assert results is not None
+
+
+@pytest.mark.parametrize("model", [ClusterInfo()], indirect=True)
+class TestFastQbloxLiveEngine:
+    def test_execute_resonator_spect(self, model):
+        builder = resonator_spect(model)
+        results = model.create_runtime().execute(builder)
         assert results is not None
