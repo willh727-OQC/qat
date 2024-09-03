@@ -491,7 +491,7 @@ class LogFolder:
         self.needs_cleanup: bool = cleanup
 
         if base_folder_path is None:
-            base_folder_path = "logs"
+            base_folder_path = "/tmp/logs"
 
         self.base_folder_path = os.path.abspath(base_folder_path)
         os.makedirs(self.base_folder_path, exist_ok=True)
