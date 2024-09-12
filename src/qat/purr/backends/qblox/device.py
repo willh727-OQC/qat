@@ -242,10 +242,10 @@ class QbloxControlHardware(ControlHardware):
         for package in qblox_packages:
             module, sequencer = self.install(package)
             if self.dump_packages:
-                filename = f"packages/package_{module.slot_idx}_{sequencer.seq_idx}_@_{datetime.utcnow().strftime('%m-%d-%Y_%H%M%S')}.json"
+                filename = f"schedules/target_{package.target}_sequence_{module.slot_idx}_{sequencer.seq_idx}_@_{datetime.utcnow().strftime('%m-%d-%Y_%H%M%S')}.json"
                 os.makedirs(os.path.dirname(filename), exist_ok=True)
                 with open(filename, "w") as f:
-                    f.write(json.dumps(asdict(package)))
+                    f.write(json.dumps(asdict(package.sequence)))
 
     def start_playback(self, repetitions: int, repetition_time: float):
         if not any(self._resources):
