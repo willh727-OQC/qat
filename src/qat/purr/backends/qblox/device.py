@@ -22,6 +22,7 @@ from qat.purr.backends.qblox.config import (
 )
 from qat.purr.backends.qblox.constants import Constants
 from qat.purr.backends.qblox.ir import Sequence
+from qat.purr.backends.qblox.visualisation import plot_packages
 from qat.purr.compiler.devices import (
     ChannelType,
     PhysicalChannel,
@@ -126,7 +127,8 @@ class QbloxControlHardware(ControlHardware):
         self.name = name or os.environ.get("QBLOX_DEV_NAME")
         self.address = address or os.environ.get("QBLOX_DEV_IP")
         self.dummy_cfg = dummy_cfg
-        self.dump_sequence = False
+        self.dump_packages = False
+        self.plot_packages = False
         self._resources: Dict[Module, Dict[PulseChannel, Sequencer]] = {}
 
     def allocate_resources(self, packages: List[QbloxPackage]):
@@ -227,12 +229,6 @@ class QbloxControlHardware(ControlHardware):
                 QrmConfigHelper(config).configure(module, sequencer)
 
         sequence = asdict(package.sequence)
-        if self.dump_sequence:
-            filename = f"schedules/sequence_{module.slot_idx}_{sequencer.seq_idx}_@_{datetime.utcnow().strftime('%m-%d-%Y_%H%M%S')}.json"
-            os.makedirs(os.path.dirname(filename), exist_ok=True)
-            with open(filename, "w") as f:
-                f.write(json.dumps(sequence))
-
         log.debug(f"Uploading sequence to {module}, sequencer {sequencer}")
         sequencer.sequence(sequence)
 
@@ -241,8 +237,15 @@ class QbloxControlHardware(ControlHardware):
     def set_data(self, qblox_packages: List[QbloxPackage]):
         self._resources.clear()
         self.allocate_resources(qblox_packages)
+        if self.plot_packages:
+            plot_packages(qblox_packages)
         for package in qblox_packages:
-            self.install(package)
+            module, sequencer = self.install(package)
+            if self.dump_packages:
+                filename = f"packages/package_{module.slot_idx}_{sequencer.seq_idx}_@_{datetime.utcnow().strftime('%m-%d-%Y_%H%M%S')}.json"
+                os.makedirs(os.path.dirname(filename), exist_ok=True)
+                with open(filename, "w") as f:
+                    f.write(json.dumps(asdict(package)))
 
     def start_playback(self, repetitions: int, repetition_time: float):
         if not any(self._resources):
